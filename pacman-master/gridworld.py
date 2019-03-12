@@ -92,8 +92,10 @@ class Gridworld(mdp.MarkovDecisionProcess):
         cell = self.grid[x][y]
         if type(cell) == int or type(cell) == float:
             return cell
-        return self.livingReward
-
+	if action == "east":
+		return self.livingReward
+	else:
+		return self.livingReward/10
     def getStartState(self):
         for x in range(self.grid.width):
             for y in range(self.grid.height):
@@ -493,7 +495,8 @@ if __name__ == '__main__':
                       'alpha': opts.learningRate,
                       'epsilon': opts.epsilon,
                       'actionFn': actionFn}
-        a = qlearningAgents.QLearningAgent(**qLearnOpts)
+        #a = qlearningAgents.QLearningAgent(**qLearnOpts)
+	a = qlearningAgents.ApproximateQAgent(**qLearnOpts)
     elif opts.agent == 'random':
         # # No reason to use the random agent without episodes
         if opts.episodes == 0:

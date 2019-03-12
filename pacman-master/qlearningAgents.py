@@ -225,7 +225,6 @@ class ApproximateQAgent(PacmanQAgent):
 		w = self.getWeights()
 		features = self.featExtractor.getFeatures(state, action)
 		for f in features:
-			//f = to a particular
 			features[f] *= float(self.alpha * difference)
 		#features.divideAll(self.alpha*difference)
 		self.weights = w.__add__(features)
