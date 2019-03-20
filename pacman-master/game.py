@@ -77,6 +77,7 @@ class Configuration:
     horizontally and y increases vertically.  Therefore, north is the direction of increasing y, or (0,1).
     """
 
+
     def __init__(self, pos, direction):
         self.pos = pos
         self.direction = direction
@@ -123,12 +124,21 @@ class AgentState:
     AgentStates hold the state of an agent (configuration, speed, scared, etc).
     """
 
+	#The size of the viewport
+    SQR_LENGTH = 2
+
+	#Array that stores the edges for the viewport of the ghost.
+    #sqrView = []
+
     def __init__( self, startConfiguration, isPacman ):
         self.start = startConfiguration
         self.configuration = startConfiguration
         self.isPacman = isPacman
         self.scaredTimer = 0
         self.numCarrying = 0
+        if isPacman is False:
+             x,y = startConfiguration.getPosition()
+             self.sqrView = [(x+SQR_LENGTH, y+SQR_LENGTH), (x+SQR_LENGTH, y-SQR_LENGTH), (x-SQR_LENGTH, y+SQR_LENGTH), (x-1, y-SQR_LENGTH)]
 
     def __str__( self ):
         if self.isPacman:
