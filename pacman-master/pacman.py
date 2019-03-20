@@ -1,14 +1,15 @@
 # pacman.py
 # ---------
-# Licensing Information:  You are free to use or extend these projects for
-# educational purposes provided that (1) you do not distribute or publish
-# solutions, (2) you retain this notice, and (3) you provide clear
-# attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
+# Licensing Information:  You are free to use or extend these projects for 
+# educational purposes provided that (1) you do not distribute or publish 
+# solutions, (2) you retain this notice, and (3) you provide clear 
+# attribution to UC Berkeley, including a link to 
+# http://inst.eecs.berkeley.edu/~cs188/pacman/pacman.html
 # 
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
-# The core projects and autograders were primarily created by John DeNero
+# The core projects and autograders were primarily created by John DeNero 
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
-# Student side autograding was added by Brad Miller, Nick Hay, and
+# Student side autograding was added by Brad Miller, Nick Hay, and 
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
@@ -268,7 +269,7 @@ class ClassicGameRules:
     These game rules manage the control flow of a game, deciding when
     and how the game starts and ends.
     """
-    def __init__(self, timeout=1):
+    def __init__(self, timeout=30):
         self.timeout = timeout
 
     def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False):
@@ -360,23 +361,22 @@ class PacmanRules:
         x,y = position
         # Eat food
         if state.data.food[x][y]:
-            state.data.scoreChange += 100
+            state.data.scoreChange += 10
             state.data.food = state.data.food.copy()
             state.data.food[x][y] = False
             state.data._foodEaten = position
             # TODO: cache numFood?
             numFood = state.getNumFood()
             if numFood == 0 and not state.data._lose:
-                state.data.scoreChange += 50000
+                state.data.scoreChange += 500
                 state.data._win = True
         # Eat capsule
         if( position in state.getCapsules() ):
-			state.data.capsules.remove( position )
-			state.data.scoreChange += 100
-			state.data._capsuleEaten = position
-			# Reset all ghosts' scared timers
-			for index in range( 1, len( state.data.agentStates ) ):
-				state.data.agentStates[index].scaredTimer = SCARED_TIME
+            state.data.capsules.remove( position )
+            state.data._capsuleEaten = position
+            # Reset all ghosts' scared timers
+            for index in range( 1, len( state.data.agentStates ) ):
+                state.data.agentStates[index].scaredTimer = SCARED_TIME
     consume = staticmethod( consume )
 
 class GhostRules:
@@ -392,12 +392,15 @@ class GhostRules:
         conf = state.getGhostState( ghostIndex ).configuration
         possibleActions = Actions.getPossibleActions( conf, state.data.layout.walls )
         reverse = Actions.reverseDirection( conf.direction )
+		#Proximity check for pacman.
         if Directions.STOP in possibleActions:
             possibleActions.remove( Directions.STOP )
         if reverse in possibleActions and len( possibleActions ) > 1:
             possibleActions.remove( reverse )
         return possibleActions
     getLegalActions = staticmethod( getLegalActions )
+
+    #Create a proximity square that flips a bit when pacman has been seen
 
     def applyAction( state, action, ghostIndex):
 
@@ -410,6 +413,10 @@ class GhostRules:
         if ghostState.scaredTimer > 0: speed /= 2.0
         vector = Actions.directionToVector( action, speed )
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
+        ghostState.updateSqr(ghostState.configuration.getposition())
+        pacmanX, pacmanY = state.getPacmanPosition()
+
+
     applyAction = staticmethod( applyAction )
 
     def decrementTimer( ghostState):
@@ -436,14 +443,14 @@ class GhostRules:
 
     def collide( state, ghostState, agentIndex):
         if ghostState.scaredTimer > 0:
-            state.data.scoreChange -= 200
+            state.data.scoreChange += 200
             GhostRules.placeGhost(state, ghostState)
             ghostState.scaredTimer = 0
             # Added for first-person
             state.data._eaten[agentIndex] = True
         else:
             if not state.data._win:
-                state.data.scoreChange -= 50000
+                state.data.scoreChange -= 500
                 state.data._lose = True
     collide = staticmethod( collide )
 
@@ -626,7 +633,7 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=1 ):
+def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
     import __main__
     __main__.__dict__['_display'] = display
 
