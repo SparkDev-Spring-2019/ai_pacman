@@ -138,7 +138,7 @@ class AgentState:
         self.numCarrying = 0
         if isPacman is False:
              x,y = startConfiguration.getPosition()
-             self.sqrView = [(x+SQR_LENGTH, y+SQR_LENGTH), (x+SQR_LENGTH, y-SQR_LENGTH), (x-SQR_LENGTH, y+SQR_LENGTH), (x-1, y-SQR_LENGTH)]
+             self.sqrView = [(x+self.SQR_LENGTH, y+self.SQR_LENGTH), (x+self.SQR_LENGTH, y-self.SQR_LENGTH), (x-self.SQR_LENGTH, y+self.SQR_LENGTH), (x-self.SQR_LENGTH, y-self.SQR_LENGTH)]
 
     def __str__( self ):
         if self.isPacman:
@@ -164,6 +164,12 @@ class AgentState:
     def getPosition(self):
         if self.configuration == None: return None
         return self.configuration.getPosition()
+
+	#A function that is only used by the ghost in pacman.py
+	#Modifies the square using the ghost position as the center
+    def updateSqr(self, ghostPosition):
+        x,y = ghostPosition
+        self.sqrView = [(x+self.SQR_LENGTH, y+self.SQR_LENGTH), (x+self.SQR_LENGTH, y-self.SQR_LENGTH), (x-self.SQR_LENGTH, y+self.SQR_LENGTH), (x-self.SQR_LENGTH, y-self.SQR_LENGTH)]
 
     def getDirection(self):
         return self.configuration.getDirection()
