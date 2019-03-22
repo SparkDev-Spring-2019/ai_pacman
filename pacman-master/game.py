@@ -171,6 +171,14 @@ class AgentState:
         x,y = ghostPosition
         self.sqrView = [(x+self.SQR_LENGTH, y+self.SQR_LENGTH), (x+self.SQR_LENGTH, y-self.SQR_LENGTH), (x-self.SQR_LENGTH, y+self.SQR_LENGTH), (x-self.SQR_LENGTH, y-self.SQR_LENGTH)]
 
+    #Checks to see if a ghost can "see" Pacman based on it's and Pacman's coordinates
+    def isPacmaninSight(self, ghostPosition, pacmanX, pacmanY):
+        x,y = ghostPosition
+        if (x-self.SQR_LENGTH<=pacmanX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=pacmanY<=x+self.SQR_LENGTH):
+            return 1
+        else: 
+            return 0
+
     def getDirection(self):
         return self.configuration.getDirection()
 
