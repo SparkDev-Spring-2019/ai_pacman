@@ -414,14 +414,14 @@ class GhostRules:
         if ghostState.scaredTimer > 0: speed /= 2.0
         vector = Actions.directionToVector( action, speed )
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
-        ghostState.updateSqr(ghostState.configuration.getposition())
+        ghostState.updateSqr(ghostState.configuration.getPosition())
         pacmanX, pacmanY = state.getPacmanPosition()
 
         #Stores whether or not the current indexed ghost can see pacman
-        TgtAcquired = ghostState.isPacmaninSight(ghostState.configuration.getposition(), pacmanX, pacmanY)
+        TgtAcquired = ghostState.isPacmaninSight(ghostState.configuration.getPosition(), pacmanX, pacmanY)
 
         #Gets list of capsules (Big Boi Pellets); will return empty list if no pellet is found
-        CapsulesinSight = ghostState.isCapsuleinSight(ghostState.configuration.getposition())
+        CapsulesinSight = ghostState.isCapsuleinSight(ghostState.configuration.getPosition(), state.getCapsules())
 
 
 
