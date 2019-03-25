@@ -403,7 +403,7 @@ class GhostRules:
     #Create a proximity square that flips a bit when pacman has been seen
 
 
-    def applyAction( state, action, ghostIndex):
+    def applyAction(state, action, ghostIndex):
 
         legal = GhostRules.getLegalActions( state, ghostIndex )
         if action not in legal:
@@ -416,8 +416,14 @@ class GhostRules:
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
         ghostState.updateSqr(ghostState.configuration.getposition())
         pacmanX, pacmanY = state.getPacmanPosition()
+
         #Stores whether or not the current indexed ghost can see pacman
         TgtAcquired = ghostState.isPacmaninSight(ghostState.configuration.getposition(), pacmanX, pacmanY)
+
+        #Gets list of capsules (Big Boi Pellets); will return empty list if no pellet is found
+        CapsulesinSight = ghostState.isCapsuleinSight(ghostState.configuration.getposition())
+
+
 
 
 

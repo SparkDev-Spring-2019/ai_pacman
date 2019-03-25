@@ -179,6 +179,17 @@ class AgentState:
         else: 
             return 0
 
+    def isCapsuleinSight(self, ghostPosition, capsuleList):
+        x,y = ghostPosition
+        capsulesFound = []
+        for i in capsuleList:
+            capsuleX,capsuleY = i
+            if (x-self.SQR_LENGTH<=capsuleX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=capsuleY<=x+self.SQR_LENGTH):
+                capsulesFound.append(i)
+        return capsulesFound
+
+
+
     def getDirection(self):
         return self.configuration.getDirection()
 
