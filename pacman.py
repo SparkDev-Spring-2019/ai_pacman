@@ -410,6 +410,8 @@ class GhostRules:
         vector = Actions.directionToVector( action, speed )
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
 
+        pacmanX, pacmanY = state.getPacmanPosition()
+
         #Stores whether or not the current indexed ghost can see pacman
         TgtAcquired = ghostState.isPacmaninSight(ghostState.configuration.getPosition(), pacmanX, pacmanY)
 

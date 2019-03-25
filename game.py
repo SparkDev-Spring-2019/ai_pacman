@@ -159,13 +159,13 @@ class AgentState:
     def getDirection(self):
         return self.configuration.getDirection()
 
+    SQR_LENGTH = 2
+
     def isPacmaninSight(self, ghostPosition, pacmanX, pacmanY):
         x,y = ghostPosition
         if (x-self.SQR_LENGTH<=pacmanX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=pacmanY<=x+self.SQR_LENGTH):
-            print "Target Acquired"
             return 1
         else: 
-            print "Target Unacquired"
             return 0
 
     def isCapsuleinSight(self, ghostPosition, capsuleList):
@@ -175,7 +175,6 @@ class AgentState:
             capsuleX,capsuleY = i
             if (x-self.SQR_LENGTH<=capsuleX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=capsuleY<=x+self.SQR_LENGTH):
                 capsulesFound.append(i)
-        print capsulesFound
         return capsulesFound
 
 class Grid:
