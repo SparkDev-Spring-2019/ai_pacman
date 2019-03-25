@@ -409,6 +409,13 @@ class GhostRules:
         if ghostState.scaredTimer > 0: speed /= 2.0
         vector = Actions.directionToVector( action, speed )
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
+
+        #Stores whether or not the current indexed ghost can see pacman
+        TgtAcquired = ghostState.isPacmaninSight(ghostState.configuration.getPosition(), pacmanX, pacmanY)
+
+        #Gets list of capsules (Big Boi Pellets); will return empty list if no pellet is found
+        CapsulesinSight = ghostState.isCapsuleinSight(ghostState.configuration.getPosition(), state.getCapsules())
+        
     applyAction = staticmethod( applyAction )
 
     def decrementTimer( ghostState):
