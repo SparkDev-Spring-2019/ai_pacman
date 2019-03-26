@@ -326,6 +326,7 @@ class PacmanRules:
     the classic game rules.
     """
     PACMAN_SPEED=1
+    FOOD_POINTS = 10
 
     def getLegalActions( state ):
         """
@@ -360,7 +361,7 @@ class PacmanRules:
         x,y = position
         # Eat food
         if state.data.food[x][y]:
-            state.data.scoreChange += 10
+            state.data.scoreChange += PacmanRules.FOOD_POINTS
             state.data.food = state.data.food.copy()
             state.data.food[x][y] = False
             state.data._foodEaten = position
@@ -409,6 +410,10 @@ class GhostRules:
         if ghostState.scaredTimer > 0: speed /= 2.0
         vector = Actions.directionToVector( action, speed )
         ghostState.configuration = ghostState.configuration.generateSuccessor( vector )
+
+        currentFood = state.getFood()
+
+        foodDesnsity = ghostState.currentFoodPop(ghostState.configuration.getPosition() , state.getFood())
 
         pacmanX, pacmanY = state.getPacmanPosition()
 

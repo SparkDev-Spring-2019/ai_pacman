@@ -24,6 +24,7 @@ from util import *
 import time, os
 import traceback
 import sys
+import numpy as np
 
 #######################
 # Parts worth reading #
@@ -129,6 +130,12 @@ class AgentState:
         self.scaredTimer = 0
         self.numCarrying = 0
         self.numReturned = 0
+        if isPacman is False:
+             x,y = startConfiguration.getPosition()
+             self.sqrView = [(x+self.SQR_LENGTH, y+self.SQR_LENGTH), 
+             (x+self.SQR_LENGTH, y-self.SQR_LENGTH), 
+             (x-self.SQR_LENGTH, y+self.SQR_LENGTH), 
+             (x-self.SQR_LENGTH, y-self.SQR_LENGTH)]
 
     def __str__( self ):
         if self.isPacman:
@@ -176,6 +183,14 @@ class AgentState:
             if (x-self.SQR_LENGTH<=capsuleX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=capsuleY<=x+self.SQR_LENGTH):
                 capsulesFound.append(i)
         return capsulesFound
+
+
+    #Takes the ghosts current view around it and returns the POPulation of food around it
+    #def currentFoodPop(self, ghostPosition, currentFood):
+        #x,y = ghostPosition
+        #currentFood = np.array(currentFood)
+        #return np.count_nonzero(currentFood[x-self.SQR_LENGTH:x+self.SQR_LENGTH+1,y-self.SQR_LENGTH:y+self.SQR_LENGTH+1] == T)
+
 
 class Grid:
     """
