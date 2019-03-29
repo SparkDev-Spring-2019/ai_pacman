@@ -171,9 +171,9 @@ class AgentState:
     def isPacmaninSight(self, ghostPosition, pacmanX, pacmanY):
         x,y = ghostPosition
         if (x-self.SQR_LENGTH<=pacmanX<=x+self.SQR_LENGTH)and(y-self.SQR_LENGTH<=pacmanY<=x+self.SQR_LENGTH):
-            return 1
+            return True
         else: 
-            return 0
+            return False
 
     def isCapsuleinSight(self, ghostPosition, capsuleList):
         x,y = ghostPosition
