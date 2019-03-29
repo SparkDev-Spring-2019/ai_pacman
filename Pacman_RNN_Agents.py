@@ -16,13 +16,14 @@ params = {
     
     #Training Params
     'train_start': 5000,
-    'batch_size': 32,
+    'batch_size': 50,
     'mem_size': 100000,
     'discount': 0.95,
     'lr': .0002,
     'num_training': 1000,
     'width': 20,
     'height': 11,
+
     #Epsilon
     'eps': 1.0,
     'eps_final': 0.1,
@@ -35,7 +36,7 @@ class PacmanRNNAgent(game.Agent):
         print("Initialize DQN Agent")
         self.params = params
         self.numeps = 0
-        self.model = RNN(params)
+        self.model = RNN(self, params)
         
     def get_onehot(self, actions):
         """ Create list of vectors with 1 values at index of action in list """
@@ -47,11 +48,48 @@ class PacmanRNNAgent(game.Agent):
     def mergeStateMatrices(self, stateMatrices):
         """ Merge state matrices to one state tensor """
         stateMatrices = np.swapaxes(stateMatrices, 0, 2)
-        total = np.zeros((7, 7))
+        total = np.zeros((7, 20))
         for i in range(len(stateMatrices)):
             total += (i + 1) * stateMatrices[i] / 6
-        return total    
+        return total
+        
+    def observation_step(self, state):
+        # Process current experience state
+        self.last_state = np.copy(self.current_state)
+        self.current_state = self.getStateMatrices(state)
+
+        # Process current experience reward
+        self.current_score = state.getScore()
+        reward = self.current_score - self.last_score
     
+        self.last_score = self.current_score
+
+        if reward > 20:
+            self.last_reward = 50.    # Eat ghost   (Yum! Yum!)
+        elif reward > 0:
+            self.last_reward = 10.    # Eat food    (Yum!)
+        elif reward < -10:
+            self.last_reward = -500.  # Get eaten   (Ouch!) -500
+            self.won = False
+        elif reward < 0:
+            self.last_reward = -1.    # Punish time (Pff..)
+
+        
+        if(self.terminal and self.won):
+            self.last_reward = 100.
+        self.ep_rew += self.last_reward
+
+        # Train
+        self.model.train(self.current_state)
+
+
+
+    def observationFunction(self, state):
+        # Do observation
+        self.terminal = False
+        self.observation_step(state)
+
+        return state
     def getStateMatrices(self, state):
         """ Return wall, ghosts, food, capsules matrices """ 
         def getWallMatrix(state):
@@ -145,9 +183,11 @@ class PacmanRNNAgent(game.Agent):
         observation[3] = getScaredGhostMatrix(state)
         observation[4] = getFoodMatrix(state)
         observation[5] = getCapsulesMatrix(state)
-
+        print(observation[0])
+       
         observation = np.swapaxes(observation, 0, 2)
-
+        print(observation[0])
+        exit()
         return observation
         
     def registerInitialState(self, state): # inspects the starting state
@@ -198,11 +238,11 @@ class PacmanRNNAgent(game.Agent):
         data = self.getStateMatrices(state)
         #self.model.load()
         move = self.model.predict(data)
-        move = self.get_direction(move)
-        return move
+        give_move = self.get_direction(move)
+        return give_move
+        
     def getAction(self, state):
         move = self.getMove(state)
-
         # Stop moving when not legal
         legal = state.getLegalActions(0)
         if move not in legal:
