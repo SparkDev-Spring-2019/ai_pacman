@@ -1,12 +1,3 @@
-# Used code from
-# DQN implementation by Tejas Kulkarni found at
-# https://github.com/mrkulk/deepQN_tensorflow
-
-# Used code from:
-# The Pacman AI projects were developed at UC Berkeley found at
-# http://ai.berkeley.edu/project_overview.html
-
-
 import numpy as np
 import random
 import util
@@ -224,7 +215,7 @@ class PacmanRNN(game.Agent):
             batch_n = np.array(batch_n)
             batch_t = np.array(batch_t)
             print(batch_s.shape)
-            _, self.cost_disp = self.rnet.train(batch_s, batch_a, batch_t, batch_n, batch_r)
+            _, self.cost_disp = self.rnet.train(params,batch_s, batch_a, batch_t, batch_n, batch_r)
 
 
     def get_onehot(self, actions):
