@@ -23,7 +23,7 @@ params = {
     'save_interval' : 10000, 
 
     # Training parameters
-    'train_start': 5000,    # Episodes before training starts
+    'train_start': 1000,    # Episodes before training starts
     'batch_size': 32,       # Replay memory batch size
     'mem_size': 100000,     # Replay memory size
 
@@ -77,35 +77,26 @@ class PacmanRNN(game.Agent):
 
 
     def getMove(self, state):
-        # Exploit / Explore
-        # # if np.random.rand() > self.params['eps']:
-            # # # Exploit action
-            # # # self.Q_pred = self.rnet.sess.run(
-                # # # self.rnet.y,
-                # # # feed_dict = {self.rnet.x: np.reshape(self.current_state,
-                                                     # # # (1, 20, 11, 6)), 
-                             # # # self.rnet.q_t: np.zeros(1),
-                             # # # self.rnet.actions: np.zeros((1, 4)),
-                             # # # self.rnet.terminals: np.zeros(1),
-                             # # # self.rnet.rewards: np.zeros(1)})[0]
+        
+        if np.random.rand() > self.params['eps']:
 
-            # # self.Q_global.append(max(self.Q_pred))
-            # # a_winner = np.argwhere(self.Q_pred == np.amax(self.Q_pred))
+            self.Q_pred = self.rnet.make_prediction(np.reshape(self.current_state, (1, 20, 11, 6)))
 
-            # # if len(a_winner) > 1:
-                # # move = self.get_direction(
-                    # # a_winner[np.random.randint(0, len(a_winner))][0])
-            # # else:
-                # # move = self.get_direction(
-                    # # a_winner[0][0])
-        # else:
-            # # Random:
-            # move = self.get_direction(np.random.randint(0, 4))
+            self.Q_global.append(max(self.Q_pred))
+            a_winner = np.argwhere(self.Q_pred == np.amax(self.Q_pred))
 
-        # # Save last_action
-        self.last_action = 1
+            if len(a_winner) > 1:
+                move = self.get_direction(
+                    a_winner[np.random.randint(0, len(a_winner))][0])
+            else:
+                move = self.get_direction(
+                    a_winner[0][0])
+        else:
+            move = self.get_direction(np.random.randint(0, 4))
 
-        return 0
+        self.last_action = self.get_value(move)
+
+        return move
 
     def get_value(self, direction):
         if direction == Directions.NORTH:
@@ -214,8 +205,7 @@ class PacmanRNN(game.Agent):
             batch_a = self.get_onehot(np.array(batch_a))
             batch_n = np.array(batch_n)
             batch_t = np.array(batch_t)
-            print(batch_s.shape)
-            _, self.cost_disp = self.rnet.train(params,batch_s, batch_a, batch_t, batch_n, batch_r)
+            self.rnet.train(params,batch_s, batch_a, batch_t, batch_n, batch_r)
 
 
     def get_onehot(self, actions):

@@ -1,8 +1,10 @@
 import tensorflow as tf
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout, Masking, RNN, Reshape, Conv2D
+from keras.layers import LSTM, Dense, Dropout, Masking, RNN, Reshape, Conv2D, Flatten
 import numpy as np
 from keras import backend as K
+import os
+
 
 class RNN:
 
@@ -22,36 +24,41 @@ class RNN:
             return self.getCalculations(q_t, y_pred, actions, terminals, rewards, discount)
         return Loss
 
-    def build_model(self):
+        
+    def build_model_Q(self):
         model = Sequential()
         model.add(Conv2D(input_shape = (20,11,6), filters =16, kernel_size = 3, strides =  (1,1), padding='SAME', activation = 'relu'))
         model.add(Conv2D( filters = 32, kernel_size = 3,strides = (1,1), padding='SAME', activation = 'relu'))
+        model.add(Flatten())
         model.add(Dense(256, activation = 'relu'))
         model.add(Dense(4))
-
+        
         return model
 
     def train(self,params,bat_s,bat_a,bat_t,bat_n,bat_r):
-        #feed_dict={self.x: bat_n, self.q_t: np.zeros(bat_n.shape[0]), self.actions: bat_a, self.terminals:bat_t, self.rewards: bat_r}
-        model = self.build_model()
-
-        loss = self.customLoss(np.zeros(bat_n.shape[0]), bat_a, bat_t, bat_r, self.params['discount'])
-        model.compile(optimizer = 'adam', loss = loss)
-        #q_t = self.sess.run(self.y, feed_dict = feed_dict)
-        q_t = model.train_on_batch(x=bat_n, y= np.zeros(bat_n.shape[0]))
-        q_t = np.amax(q_t, axis=1)
-        print("QT")
-        print(q_t)
-        print(q_t.shape)
-        loss = self.customLoss(q_t, bat_a, bat_t, bat_r, self.params.discount)
-        model.compile(optimizer = 'adam', loss = loss)
-        #feed_dict={self.x: bat_s, self.q_t: q_t, self.actions: bat_a, self.terminals:bat_t, self.rewards: bat_r}
-        _,cnt,cost = self.model.train_on_batch(x=bat_s, y= q_t)
+        model_target = self.build_model_Q()
+        loss_target = self.customLoss(np.zeros(bat_n.shape[0]), bat_a, bat_t, bat_r, self.params['discount'])
+        model_target.compile(optimizer = 'adam', loss = loss_target)
+        
+        if(os. path. isfile('C:/Users/eshou/Desktop/testRNN.h5')):
+            model_target.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
+            
+        model_target.train_on_batch(bat_n, np.zeros(bat_n.shape[0]))
+        q_t_preds = model_target.predict(bat_n)
+        q_t = np.amax(q_t_preds, axis=1)
+        
+        loss_target = self.customLoss(q_t, bat_a, bat_t, bat_r, self.params['discount'])
+        model_target.compile(optimizer = 'adam', loss = loss_target)
+        model_target.train_on_batch(x=bat_s, y= q_t)
         
         print("Training")
         
-        self.model.save('C:/Users/Andy Garcia/Desktop/testRNN.h5')
-        return cnt, cost
+        model_target.save_weights('C:/Users/eshou/Desktop/testRNN.h5')
+        
     
-    #def predict(self, data):
-    #    self.model.predict(x = data, batch_size = None)
+    def make_prediction(self, input):
+        q_model = self.build_model_Q()
+        if(os. path. isfile('C:/Users/eshou/Desktop/testRNN.h5')):
+            q_model.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
+        q_model.compile(optimizer ='adam', loss = 'MSE')
+        return q_model.predict(input)
