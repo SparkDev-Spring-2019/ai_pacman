@@ -1,43 +1,232 @@
+# Used code from
+# DQN implementation by Tejas Kulkarni found at
+# https://github.com/mrkulk/deepQN_tensorflow
+
+# Used code from:
+# The Pacman AI projects were developed at UC Berkeley found at
+# http://ai.berkeley.edu/project_overview.html
+
+
 import numpy as np
-import random, util, time, sys
+import random
+import util
+import time
+import sys
+from keras import backend as K
+# Pacman game
 from pacman import Directions
 from game import Agent
 import game
+
+# Replay memory
+from collections import deque
+
+# Neural nets
 import tensorflow as tf
 from RNN import *
-from tensorflow.contrib import rnn 
-
 
 params = {
-    #Backup Model
+    # Model backups
     'load_file': None,
     'save_file': None,
-    'save_interval': 10000,
-    
-    #Training Params
-    'train_start': 5000,
-    'batch_size': 50,
-    'mem_size': 100000,
-    'discount': 0.95,
-    'lr': .0002,
-    'num_training': 1000,
-    'width': 20,
-    'height': 11,
+    'save_interval' : 10000, 
 
-    #Epsilon
-    'eps': 1.0,
-    'eps_final': 0.1,
-    'eps_step': 10000
-}
+    # Training parameters
+    'train_start': 5000,    # Episodes before training starts
+    'batch_size': 32,       # Replay memory batch size
+    'mem_size': 100000,     # Replay memory size
 
-class PacmanRNNAgent(game.Agent):
+    'discount': 0.95,       # Discount rate (gamma value)
+    'lr': .0002,            # Learning reate
+    # 'rms_decay': 0.99,      # RMS Prop decay (switched to adam)
+    # 'rms_eps': 1e-6,        # RMS Prop epsilon (switched to adam)
 
+    # Epsilon value (epsilon-greedy)
+    'eps': 1.0,             # Epsilon start value
+    'eps_final': 0.1,       # Epsilon end value
+    'eps_step': 10000       # Epsilon steps between start and end (linear)
+}                     
+
+
+
+class PacmanRNN(game.Agent):
     def __init__(self, args):
-        print("Initialize DQN Agent")
+
+        print("Initialise DQN Agent")
+
+        # Load parameters from user-given arguments
         self.params = params
+        self.params['width'] = 20
+        self.params['height'] = 11
+        self.params['num_training'] = 5
+
+        # Start Tensorflow session
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
+        self.sess = tf.Session(config = tf.ConfigProto(gpu_options = gpu_options))
+        self.rnet = RNN(self.params)
+
+        # time started
+        self.general_record_time = time.strftime("%a_%d_%b_%Y_%H_%M_%S", time.localtime())
+        # Q and cost
+        self.Q_global = []
+        self.cost_disp = 0     
+
+        # Stats
+        # self.rnet.sess.run(tf.global_variables_initializer())
+        # self.cnt = self.rnet.sess.run(self.rnet.global_step)
+        self.local_cnt = 0
+
         self.numeps = 0
-        self.model = RNN(self, params)
+        self.last_score = 0
+        self.s = time.time()
+        self.last_reward = 0.
+
+        self.replay_mem = deque()
+        self.last_scores = deque()
+
+
+    def getMove(self, state):
+        # Exploit / Explore
+        # # if np.random.rand() > self.params['eps']:
+            # # # Exploit action
+            # # # self.Q_pred = self.rnet.sess.run(
+                # # # self.rnet.y,
+                # # # feed_dict = {self.rnet.x: np.reshape(self.current_state,
+                                                     # # # (1, 20, 11, 6)), 
+                             # # # self.rnet.q_t: np.zeros(1),
+                             # # # self.rnet.actions: np.zeros((1, 4)),
+                             # # # self.rnet.terminals: np.zeros(1),
+                             # # # self.rnet.rewards: np.zeros(1)})[0]
+
+            # # self.Q_global.append(max(self.Q_pred))
+            # # a_winner = np.argwhere(self.Q_pred == np.amax(self.Q_pred))
+
+            # # if len(a_winner) > 1:
+                # # move = self.get_direction(
+                    # # a_winner[np.random.randint(0, len(a_winner))][0])
+            # # else:
+                # # move = self.get_direction(
+                    # # a_winner[0][0])
+        # else:
+            # # Random:
+            # move = self.get_direction(np.random.randint(0, 4))
+
+        # # Save last_action
+        self.last_action = 1
+
+        return 0
+
+    def get_value(self, direction):
+        if direction == Directions.NORTH:
+            return 0.
+        elif direction == Directions.EAST:
+            return 1.
+        elif direction == Directions.SOUTH:
+            return 2.
+        else:
+            return 3.
+
+    def get_direction(self, value):
+        if value == 0.:
+            return Directions.NORTH
+        elif value == 1.:
+            return Directions.EAST
+        elif value == 2.:
+            return Directions.SOUTH
+        else:
+            return Directions.WEST
+            
+    def observation_step(self, state):
+        if self.last_action is not None:
+            # Process current experience state
+            self.last_state = np.copy(self.current_state)
+            self.current_state = self.getStateMatrices(state)
+
+            # Process current experience reward
+            self.current_score = state.getScore()
+            reward = self.current_score - self.last_score
+            self.last_score = self.current_score
+
+            if reward > 20:
+                self.last_reward = 50.    # Eat ghost   (Yum! Yum!)
+            elif reward > 0:
+                self.last_reward = 10.    # Eat food    (Yum!)
+            elif reward < -10:
+                self.last_reward = -500.  # Get eaten   (Ouch!) -500
+                self.won = False
+            elif reward < 0:
+                self.last_reward = -1.    # Punish time (Pff..)
+
+            
+            if(self.terminal and self.won):
+                self.last_reward = 100.
+            self.ep_rew += self.last_reward
+
+            # Store last experience into memory 
+            experience = (self.last_state, float(self.last_reward), self.last_action, self.current_state, self.terminal)
+            self.replay_mem.append(experience)
+            if len(self.replay_mem) > self.params['mem_size']:
+                self.replay_mem.popleft()
+
+            # Save model
+            # if(params['save_file']):
+                # if self.local_cnt > self.params['train_start'] and self.local_cnt % self.params['save_interval'] == 0:
+                    # self.model.save_ckpt('saves/model-' + params['save_file'] + "_" + str(self.cnt) + '_' + str(self.numeps))
+                    # print('Model saved')
+
+            # Train
+            self.train()
+
+        # Next
+        self.local_cnt += 1
+        self.frame += 1
+        self.params['eps'] = max(self.params['eps_final'],
+                                 1.00 - float(self.local_cnt)/ float(self.params['eps_step']))
+
+
+    def observationFunction(self, state):
+        # Do observation
+        self.terminal = False
+        self.observation_step(state)
+
+        return state
+
+    def final(self, state):
+        # Next
+        self.ep_rew += self.last_reward
+
+        # Do observation
+        self.terminal = True
+        self.observation_step(state)
+
+        # Print stats
         
+
+    def train(self):
+        # Train
+        if (self.local_cnt > self.params['train_start']):
+            batch = random.sample(self.replay_mem, self.params['batch_size'])
+            batch_s = [] # States (s)
+            batch_r = [] # Rewards (r)
+            batch_a = [] # Actions (a)
+            batch_n = [] # Next states (s')
+            batch_t = [] # Terminal state (t)
+
+            for i in batch:
+                batch_s.append(i[0])
+                batch_r.append(i[1])
+                batch_a.append(i[2])
+                batch_n.append(i[3])
+                batch_t.append(i[4])
+            batch_s = np.array(batch_s)
+            batch_r = np.array(batch_r)
+            batch_a = self.get_onehot(np.array(batch_a))
+            batch_n = np.array(batch_n)
+            batch_t = np.array(batch_t)
+            print(batch_s.shape)
+            _, self.cost_disp = self.rnet.train(batch_s, batch_a, batch_t, batch_n, batch_r)
+
+
     def get_onehot(self, actions):
         """ Create list of vectors with 1 values at index of action in list """
         actions_onehot = np.zeros((self.params['batch_size'], 4))
@@ -48,48 +237,11 @@ class PacmanRNNAgent(game.Agent):
     def mergeStateMatrices(self, stateMatrices):
         """ Merge state matrices to one state tensor """
         stateMatrices = np.swapaxes(stateMatrices, 0, 2)
-        total = np.zeros((7, 20))
+        total = np.zeros((7, 7))
         for i in range(len(stateMatrices)):
             total += (i + 1) * stateMatrices[i] / 6
         return total
-        
-    def observation_step(self, state):
-        # Process current experience state
-        self.last_state = np.copy(self.current_state)
-        self.current_state = self.getStateMatrices(state)
 
-        # Process current experience reward
-        self.current_score = state.getScore()
-        reward = self.current_score - self.last_score
-    
-        self.last_score = self.current_score
-
-        if reward > 20:
-            self.last_reward = 50.    # Eat ghost   (Yum! Yum!)
-        elif reward > 0:
-            self.last_reward = 10.    # Eat food    (Yum!)
-        elif reward < -10:
-            self.last_reward = -500.  # Get eaten   (Ouch!) -500
-            self.won = False
-        elif reward < 0:
-            self.last_reward = -1.    # Punish time (Pff..)
-
-        
-        if(self.terminal and self.won):
-            self.last_reward = 100.
-        self.ep_rew += self.last_reward
-
-        # Train
-        self.model.train(self.current_state)
-
-
-
-    def observationFunction(self, state):
-        # Do observation
-        self.terminal = False
-        self.observation_step(state)
-
-        return state
     def getStateMatrices(self, state):
         """ Return wall, ghosts, food, capsules matrices """ 
         def getWallMatrix(state):
@@ -183,13 +335,11 @@ class PacmanRNNAgent(game.Agent):
         observation[3] = getScaredGhostMatrix(state)
         observation[4] = getFoodMatrix(state)
         observation[5] = getCapsulesMatrix(state)
-        print(observation[0])
-       
+
         observation = np.swapaxes(observation, 0, 2)
-        print(observation[0])
-        exit()
-        return observation
         
+        return observation
+
     def registerInitialState(self, state): # inspects the starting state
 
         # Reset reward
@@ -214,35 +364,10 @@ class PacmanRNNAgent(game.Agent):
         # Next
         self.frame = 0
         self.numeps += 1
-    def get_value(self, direction):
-        if direction == Directions.NORTH:
-            return 0.
-        elif direction == Directions.EAST:
-            return 1.
-        elif direction == Directions.SOUTH:
-            return 2.
-        else:
-            return 3.
 
-    def get_direction(self, value):
-        if value == 0.:
-            return Directions.NORTH
-        elif value == 1.:
-            return Directions.EAST
-        elif value == 2.:
-            return Directions.SOUTH
-        else:
-            return Directions.WEST
-            
-    def getMove(self, state):
-        data = self.getStateMatrices(state)
-        #self.model.load()
-        move = self.model.predict(data)
-        give_move = self.get_direction(move)
-        return give_move
-        
     def getAction(self, state):
         move = self.getMove(state)
+
         # Stop moving when not legal
         legal = state.getLegalActions(0)
         if move not in legal:
