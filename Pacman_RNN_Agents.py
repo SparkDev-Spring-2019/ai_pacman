@@ -23,7 +23,7 @@ params = {
     'save_interval' : 10000, 
 
     # Training parameters
-    'train_start': 1000,    # Episodes before training starts
+    'train_start': 35,    # Episodes before training starts
     'batch_size': 32,       # Replay memory batch size
     'mem_size': 100000,     # Replay memory size
 
@@ -49,7 +49,7 @@ class PacmanRNN(game.Agent):
         self.params = params
         self.params['width'] = 20
         self.params['height'] = 11
-        self.params['num_training'] = 5
+        
 
         # Start Tensorflow session
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
@@ -355,3 +355,4 @@ class PacmanRNN(game.Agent):
             move = Directions.STOP
 
         return move
+        

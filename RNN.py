@@ -11,6 +11,7 @@ class RNN:
     def __init__(self, params):
         self.params = params
         self.network_name = 'rnet'
+        self.counter = 0
         print("We have lift off")
 
     def getCalculations(self, q_t, y_pred, actions, terminals, rewards, discount):
@@ -44,16 +45,25 @@ class RNN:
             model_target.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
             
         model_target.train_on_batch(bat_n, np.zeros(bat_n.shape[0]))
-        q_t_preds = model_target.predict(bat_n)
+        get_output = K.function([model_target.layers[0].input],[model_target.layers[4].output]) 
+       
+        
+        q_t_preds = get_output([bat_n])[0]
+        
         q_t = np.amax(q_t_preds, axis=1)
         
         loss_target = self.customLoss(q_t, bat_a, bat_t, bat_r, self.params['discount'])
         model_target.compile(optimizer = 'adam', loss = loss_target)
         model_target.train_on_batch(x=bat_s, y= q_t)
         
-        print("Training")
         
-        model_target.save_weights('C:/Users/eshou/Desktop/testRNN.h5')
+        
+        print(self.counter)
+        self.counter = self.counter + 1
+     
+        if self.counter % 10 == 0:
+            print("Saving")
+            model_target.save_weights('C:/Users/eshou/Desktop/testRNN.h5')
         
     
     def make_prediction(self, input):
@@ -61,4 +71,4 @@ class RNN:
         if(os. path. isfile('C:/Users/eshou/Desktop/testRNN.h5')):
             q_model.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
         q_model.compile(optimizer ='adam', loss = 'MSE')
-        return q_model.predict(input)
+        return K.function([model_target.layers[0].input],[model_target.layers[4].output]) 
