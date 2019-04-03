@@ -23,7 +23,7 @@ params = {
     'save_interval' : 10000, 
 
     # Training parameters
-    'train_start': 35,    # Episodes before training starts
+    'train_start': 200,    # Episodes before training starts
     'batch_size': 32,       # Replay memory batch size
     'mem_size': 100000,     # Replay memory size
 
@@ -43,13 +43,13 @@ params = {
 class PacmanRNN(game.Agent):
     def __init__(self, args):
 
-        print("Initialise DQN Agent")
+        print("Initialise CNN Agent")
 
         # Load parameters from user-given arguments
         self.params = params
         self.params['width'] = 20
         self.params['height'] = 11
-        
+        self.game_count = 1
 
         # Start Tensorflow session
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
@@ -170,7 +170,7 @@ class PacmanRNN(game.Agent):
         # Do observation
         self.terminal = False
         self.observation_step(state)
-
+        
         return state
 
     def final(self, state):
@@ -182,7 +182,9 @@ class PacmanRNN(game.Agent):
         self.observation_step(state)
 
         # Print stats
-        
+        if self.game_count % 50 == 0:
+            print(self.game_count)
+        self.game_count = self.game_count + 1
 
     def train(self):
         # Train

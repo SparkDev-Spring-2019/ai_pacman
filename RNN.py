@@ -12,6 +12,7 @@ class RNN:
         self.params = params
         self.network_name = 'rnet'
         self.counter = 0
+        self.model = self.build_model_Q()
         print("We have lift off")
 
     def getCalculations(self, q_t, y_pred, actions, terminals, rewards, discount):
@@ -34,28 +35,25 @@ class RNN:
         model.add(Dense(256, activation = 'relu'))
         model.add(Dense(4))
         
+        model.compile(optimizer = 'adam', loss = 'mse')
         return model
 
     def train(self,params,bat_s,bat_a,bat_t,bat_n,bat_r):
-        model_target = self.build_model_Q()
-        loss_target = self.customLoss(np.zeros(bat_n.shape[0]), bat_a, bat_t, bat_r, self.params['discount'])
-        model_target.compile(optimizer = 'adam', loss = loss_target)
+        #model_target = self.build_model_Q()
+        #loss_target = self.customLoss(np.zeros(bat_n.shape[0]), bat_a, bat_t, bat_r, self.params['discount'])
+        #model_target.compile(optimizer = 'adam', loss = loss_target)
         
         if(os. path. isfile('C:/Users/eshou/Desktop/testRNN.h5')):
-            model_target.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
+            self.model.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
             
-        model_target.train_on_batch(bat_n, np.zeros(bat_n.shape[0]))
-        get_output = K.function([model_target.layers[0].input],[model_target.layers[4].output]) 
-       
-        
-        q_t_preds = get_output([bat_n])[0]
-        
+        #model_target.train_on_batch(bat_n, np.zeros(bat_n.shape[0]))
+        q_t_preds = self.model.predict(bat_n)
         q_t = np.amax(q_t_preds, axis=1)
         
-        loss_target = self.customLoss(q_t, bat_a, bat_t, bat_r, self.params['discount'])
-        model_target.compile(optimizer = 'adam', loss = loss_target)
-        model_target.train_on_batch(x=bat_s, y= q_t)
-        
+        #loss_target = self.customLoss(q_t, bat_a, bat_t, bat_r, self.params['discount'])
+        #self.model.compile(optimizer = 'adam', loss = loss_target)
+        Q_values = bat_r + self.params['discount'] * q_t
+        self.model.fit(bat_s, bat_a*Q_values[:,None], nb_epoch=1, batch_size=len(bat_s), verbose=1)
         
         
         print(self.counter)
@@ -63,12 +61,12 @@ class RNN:
      
         if self.counter % 10 == 0:
             print("Saving")
-            model_target.save_weights('C:/Users/eshou/Desktop/testRNN.h5')
+            self.model.save_weights('C:/Users/eshou/Desktop/testRNN.h5')
         
     
     def make_prediction(self, input):
-        q_model = self.build_model_Q()
+        #q_model = self.build_model_Q()
         if(os. path. isfile('C:/Users/eshou/Desktop/testRNN.h5')):
-            q_model.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
-        q_model.compile(optimizer ='adam', loss = 'MSE')
-        return K.function([model_target.layers[0].input],[model_target.layers[4].output]) 
+            self.model.load_weights('C:/Users/eshou/Desktop/testRNN.h5')
+        #q_model.compile(optimizer ='adam', loss = 'MSE')
+        return self.model.predict(input)
